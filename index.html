@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Floorball Mobile Seasons + Battle Pass Cosmetics</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    #menu, #gameUI {
+      width: 100%;
+      max-width: 480px;
+      padding: 12px;
+      box-sizing: border-box;
+    }
+    h1, h2 {
+      margin: 8px 0;
+      text-align: center;
+    }
+    button, select {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      font-size: 16px;
+      border-radius: 6px;
+      border: none;
+      background: #333;
+      color: #fff;
+    }
+    button.primary { background: #0a84ff; }
+    button.danger { background: #ff3b30; }
+    canvas {
+      width: 100%;
+      max-width: 480px;
+      height: auto;
+      border: 2px solid #fff;
+      touch-action: none;
+      display: block;
+    }
+    #gameUI { display: none; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    #playerStats {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    #historyPanel {
+      margin-top: 10px;
+      border-top: 1px solid #444;
+      padding-top: 8px;
+      display: none;
+    }
+    .historyCard {
+      border-radius: 8px;
+      padding: 8px;
+      margin: 6px 0;
+      background: #222;
+      box-shadow: 0 0 6px rgba(0,0,0,0.6);
+      font-size: 13px;
+    }
+    .historyCard.win { border-left: 4px solid #00c853; }
+    .historyCard.loss { border-left: 4px solid #ff5252; }
+    .historyCard.draw { border-left: 4px solid #ffeb3b; }
+    .historyHeader {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .historyMeta {
+      color: #ccc;
+      margin-bottom: 4px;
+    }
+    #bpPanel {
+      margin-top: 10px;
+      border-top: 1px solid #444;
+      padding-top: 8px;
+      display: none;
+      font-size: 13px;
+    }
+    .bpTier {
+      border-radius: 6px;
+      padding: 6px;
+      margin: 4px 0;
+      background: #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .bpTier.unlocked { border-left: 4px solid #0a84ff; }
+    .bpTier.claimed { border-left: 4px solid #00c853; opacity: 0.7; }
+    .bpMission {
+      border-radius: 6px;
+      padding: 6px;
+      margin: 4px 0;
+      background: #222;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu">
+    <h1>Floorball Mobile Seasons + Battle Pass Cosmetics</h1>
+
+    <h2>Game Mode</h2>
+    <select id="modeSelect">
+      <option value="1">1v1</option>
+      <option value="2">2v2</option>
+      <option value="3">3v3</option>
+      <option value="5" selected>5v5</option>
+    </select>
+
+    <h2>Mode Type</h2>
+    <select id="modeTypeSelect">
+      <option value="casual" selected>Casual</option>
+      <option value="ranked">Ranked</option>
+    </select>
+
+    <h2>Player Design</h2>
+    <div class="row">
+      <select id="kitSelect">
+        <option value="default">Default Kit</option>
+        <option value="speed">Speed Kit (+Speed)</option>
+        <option value="agility">Agility Kit (+Agility)</option>
+      </select>
+      <select id="colorSelect">
+        <option value="#00aaff">Blue</option>
+        <option value="#ff4444">Red</option>
+        <option value="#ffcc00">Yellow</option>
+        <option value="#00ff88">Green</option>
+      </select>
+    </div>
+
+    <h2>Player Progress</h2>
+    <div id="playerStats">
+      Season: <span id="seasonText">1</span><br>
+      Level: <span id="levelText">1</span><br>
+      XP: <span id="xpText">0</span><br>
+      Rank: <span id="rankText">Unranked</span><br>
+      Rank Points: <span id="rankPointsText">0</span><br>
+      Coins: <span id="coinsText">0</span>
+    </div>
+
+    <h2>Shop (Daily Refresh)</h2>
+    <button id="refreshShopBtn">Force Refresh</button>
+    <div id="shopItems"></div>
+
+    <h2>Ultra Boost Packs</h2>
+    <button id="ultraBtn" class="danger">
+      Ultra Boost Pack (requires level & coins)
+    </button>
+
+    <h2>Battle Pass</h2>
+    <button id="buyPassBtn">Buy Battle Pass (2000 coins)</button>
+    <button id="toggleBPBtn">Show / Hide Battle Pass</button>
+    <div id="bpPanel">
+      <div>Pass Owned: <span id="bpOwnedText">No</span></div>
+      <div>Pass XP: <span id="bpXPText">0</span></div>
+      <h3>Daily & Weekly Missions</h3>
+      <div id="bpMissions"></div>
+      <h3>100-Tier Rewards</h3>
+      <div id="bpTiers"></div>
+    </div>
+
+    <button id="startGameBtn" class="primary">Start Game</button>
+
+    <h2>Match History</h2>
+    <button id="toggleHistoryBtn">Show / Hide History</button>
+    <div id="historyPanel">
+      <button id="clearHistoryBtn">Clear History</button>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <div id="gameUI">
+    <h2 id="hudText">Floorball Match</h2>
+    <div class="row">
+      <div>Score: <span id="scoreA">0</span> - <span id="scoreB">0</span></div>
+      <div>Time: <span id="timeText">10:00</span></div>
+    </div>
+    <canvas id="game" width="480" height="270"></canvas>
+    <button id="backToMenuBtn">Back to Menu</button>
+  </div>
+
+  <audio id="crowdLoop" src="" loop></audio>
+  <audio id="crowdCheer" src=""></audio>
+
+  <script src="game.js"></script>
+</body>
+</html>
